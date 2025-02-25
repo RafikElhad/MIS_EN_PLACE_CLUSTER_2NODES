@@ -1,0 +1,38 @@
+Vagrant.configure("2") do |config|  
+  config.vm.boot_timeout = 1000  
+  config.vm.define "webserver" do |webserver|
+    webserver.vm.box = "bento/ubuntu-22.04"
+    webserver.vm.box_check_update = false
+    webserver.vm.network "forwarded_port", guest: 80, host: 8080
+    webserver.vm.network "private_network", ip: "192.168.33.10"
+    webserver.vm.synced_folder "../web", "/var/www/html"
+    webserver.vm.provider "virtualbox" do |vb|
+      vb.gui = false
+      vb.memory = "1024"
+      vb.cpus = "1"
+      vb.name = "webserver"
+    end
+  end  
+  config.vm.define "dbserver" do |dbserver|
+    dbserver.vm.box = "bento/ubuntu-22.04"
+    dbserver.vm.box_check_update = false
+    dbserver.vm.network "forwarded_port", guest: 80, host: 8086
+    dbserver.vm.network "private_network", ip: "192.168.33.11"
+    dbserver.vm.synced_folder "../db", "/var/www/html"
+    dbserver.vm.provider "virtualbox" do |vb|
+      vb.gui = false
+      vb.memory = "1024"
+      vb.cpus = "1"
+      vb.name = "dbserver"
+    dbserver.vm.provision "shell", inline: <<-SHELL
+      apt-get update
+      apt-get install -y mysql-server
+      systemctl start mysql
+      systemctl enable mysql
+      mysql -e "CREATE DATABASE test;"
+      mysql -e "CREATE USER 'your_user'@'localhost' IDENTIFIED BY 'passer';"
+      mysql -e "FLUSH PRIVILEGES;"
+      SHELL
+    end
+  end  
+end
